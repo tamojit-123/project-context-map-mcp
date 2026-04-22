@@ -1,0 +1,39 @@
+{
+  "name": "project-context-map-mcp",
+  "version": "0.1.0",
+  "description": "MCP server and Claude Code skill for project-aware code changes with low token usage.",
+  "type": "module",
+  "main": "src/cli.js",
+  "bin": {
+    "project-context-map-mcp": "./src/cli.js"
+  },
+  "scripts": {
+    "mcp": "node src/cli.js serve",
+    "refresh-map": "node src/cli.js refresh",
+    "install-hooks": "node src/cli.js install-hooks",
+    "configure-claude": "node src/cli.js configure-claude",
+    "print-mcp-config": "node src/cli.js print-mcp-config",
+    "check": "node --check src/cli.js && node --check src/server.js && node --check scripts/refresh-map.js && node --check scripts/install-git-hooks.js"
+  },
+  "keywords": [
+    "mcp",
+    "claude-code",
+    "copilot",
+    "context-map",
+    "project-memory"
+  ],
+  "author": "",
+  "license": "MIT",
+  "files": [
+    "src",
+    "scripts",
+    ".claude/skills/project-context-map/SKILL.md",
+    "README.md"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

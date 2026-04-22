@@ -1,0 +1,7 @@
+node_modules
+.project-map.json
+.project-map.md
+.project.md
+dist
+coverage
+*.log
