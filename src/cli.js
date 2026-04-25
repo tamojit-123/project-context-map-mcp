@@ -46,65 +46,72 @@ Commands:
 const { command, options } = parseArgs(process.argv.slice(2));
 const projectRoot = options["project-root"] || process.cwd();
 
-if (command === "help" || command === "--help" || command === "-h") {
-  printHelp();
-  process.exit(0);
-}
-
-if (command === "serve") {
-  if (options["project-root"]) {
-    process.env.PROJECT_ROOT = projectRoot;
+async function main() {
+  if (command === "help" || command === "--help" || command === "-h") {
+    printHelp();
+    process.exit(0);
   }
-  await startServer();
-  process.exit(0);
+
+  if (command === "serve") {
+    if (options["project-root"]) {
+      process.env.PROJECT_ROOT = projectRoot;
+    }
+    await startServer();
+    return;
+  }
+
+  if (command === "refresh") {
+    refreshMapCli(projectRoot);
+    process.exit(0);
+  }
+
+  if (command === "install-hooks") {
+    installGitHooks(projectRoot);
+    process.exit(0);
+  }
+
+  if (command === "configure-claude") {
+    const skillPath = writeClaudeSkill(projectRoot);
+    const configPath = writeMcpConfig(projectRoot, {
+      projectRoot: ".",
+      serverName: options["server-name"] || "project-context-map",
+      command: options.command || "project-context-map-mcp"
+    });
+
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          message: "Claude Code skill and .mcp.json created.",
+          skillPath,
+          configPath
+        },
+        null,
+        2
+      )}\n`
+    );
+    process.exit(0);
+  }
+
+  if (command === "print-mcp-config") {
+    process.stdout.write(
+      `${JSON.stringify(
+        buildMcpConfig({
+          projectRoot: options["project-root"] || ".",
+          serverName: options["server-name"] || "project-context-map",
+          command: options.command || "project-context-map-mcp"
+        }),
+        null,
+        2
+      )}\n`
+    );
+    process.exit(0);
+  }
+
+  printHelp();
+  process.exit(1);
 }
 
-if (command === "refresh") {
-  refreshMapCli(projectRoot);
-  process.exit(0);
-}
-
-if (command === "install-hooks") {
-  installGitHooks(projectRoot);
-  process.exit(0);
-}
-
-if (command === "configure-claude") {
-  const skillPath = writeClaudeSkill(projectRoot);
-  const configPath = writeMcpConfig(projectRoot, {
-    projectRoot: ".",
-    serverName: options["server-name"] || "project-context-map",
-    command: options.command || "project-context-map-mcp"
-  });
-
-  process.stdout.write(
-    `${JSON.stringify(
-      {
-        message: "Claude Code skill and .mcp.json created.",
-        skillPath,
-        configPath
-      },
-      null,
-      2
-    )}\n`
-  );
-  process.exit(0);
-}
-
-if (command === "print-mcp-config") {
-  process.stdout.write(
-    `${JSON.stringify(
-      buildMcpConfig({
-        projectRoot: options["project-root"] || ".",
-        serverName: options["server-name"] || "project-context-map",
-        command: options.command || "project-context-map-mcp"
-      }),
-      null,
-      2
-    )}\n`
-  );
-  process.exit(0);
-}
-
-printHelp();
-process.exit(1);
+await main().catch((error) => {
+  process.stderr.write(`${error?.stack || String(error)}\n`);
+  process.exit(1);
+});

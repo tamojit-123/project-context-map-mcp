@@ -1,6 +1,6 @@
 {
   "name": "project-context-map-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server and Claude Code skill for project-aware code changes with low token usage.",
   "type": "module",
   "main": "src/cli.js",
@@ -13,7 +13,10 @@
     "install-hooks": "node src/cli.js install-hooks",
     "configure-claude": "node src/cli.js configure-claude",
     "print-mcp-config": "node src/cli.js print-mcp-config",
-    "check": "node --check src/cli.js && node --check src/server.js && node --check scripts/refresh-map.js && node --check scripts/install-git-hooks.js"
+    "lint": "node --check src/cli.js && node --check src/claude.js && node --check src/git.js && node --check src/indexer.js && node --check src/ranker.js && node --check src/server.js && node --check src/utils.js && node --check scripts/install-git-hooks.js && node --check scripts/refresh-map.js && node --check test/claude.test.js && node --check test/helpers.js && node --check test/indexer.test.js && node --check test/ranker.test.js && node --check test/utils.test.js",
+    "check": "npm run lint && npm test",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
+    "prepublishOnly": "npm run check"
   },
   "keywords": [
     "mcp",
@@ -35,5 +38,11 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "jest": {
+    "testEnvironment": "node"
+  },
+  "devDependencies": {
+    "jest": "^30.3.0"
   }
 }

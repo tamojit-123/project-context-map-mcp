@@ -1,0 +1,14 @@
+{
+    "servers": {
+        "project-context-map": {
+            "command": "project-context-map-mcp",
+            "args": [
+                "serve",
+                "--project-root",
+                "."
+            ],
+            "env": {}
+        }
+    },
+    "inputs": []
+}
