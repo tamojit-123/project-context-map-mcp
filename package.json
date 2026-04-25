@@ -1,6 +1,6 @@
 {
   "name": "project-context-map-mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "MCP server and Claude Code skill for project-aware code changes with low token usage.",
   "type": "module",
   "main": "src/cli.js",
