@@ -138,6 +138,11 @@ Typical flow:
 4. make changes
 5. refresh the map
 
+Prompt examples:
+
+- See [PROMPTS.md](./PROMPTS.md) for tested starter prompts for Claude Code, Cursor, and VS Code Copilot Chat.
+- For best results, use prompts that name the feature area, module, or source files you want the agent to inspect.
+
 ---
 
 ## MCP Config
@@ -457,11 +462,14 @@ project-context-map-mcp refresh --project-root .
 
 ## Example Prompts For Your MCP Client
 
-- `Read the project context first, then find the files involved in session refresh logic.`
-- `Use query_topology to locate the API and UI files for export CSV.`
-- `Check .project.md before making changes.`
-- `Refresh the project map after this feature is complete.`
-- `Find the files that control authentication and read only those files first.`
+Tested prompt templates now live in [PROMPTS.md](./PROMPTS.md).
+
+Quick examples:
+
+- `Use the project context map first, then find the files involved in session refresh logic.`
+- `Use query_topology to locate the files related to npm publishing, package configuration, and release safety checks.`
+- `Use get_module_context for src and explain how the CLI and MCP server fit together.`
+- `Find the files that control authentication and prefer source files over docs.`
 
 ---
 

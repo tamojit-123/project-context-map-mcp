@@ -31,6 +31,7 @@
     "src",
     "scripts",
     ".claude/skills/project-context-map/SKILL.md",
+    "PROMPTS.md",
     "README.md"
   ],
   "dependencies": {
