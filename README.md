@@ -11,6 +11,8 @@ Turn a repository into structured project memory for MCP clients like Claude Cod
 [![Project Memory](https://img.shields.io/badge/project-memory-16a34a?style=for-the-badge)](#what-it-generates)
 [![Topology Aware](https://img.shields.io/badge/topology-imports%20%26%20usage-f59e0b?style=for-the-badge)](#topology--visual-graph)
 
+[![Project Context Map MCP server](https://mcprush.com/badge/project-context-map-mcp/card.svg)](https://mcprush.com/to/project-context-map-mcp?ref=badge)
+
 </div>
 
 ---
