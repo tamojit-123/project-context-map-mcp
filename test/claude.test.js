@@ -68,4 +68,12 @@ describe("claude helpers", () => {
       env: {}
     });
   });
+
+  test("writeMcpConfig throws contextual error when .mcp.json contains invalid JSON", () => {
+    const root = createTempProject();
+    tempProjects.push(root);
+    writeFile(root, ".mcp.json", "{ broken");
+
+    expect(() => writeMcpConfig(root)).toThrow("Invalid JSON in");
+  });
 });

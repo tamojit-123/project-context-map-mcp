@@ -1,8 +1,11 @@
 import { execFileSync } from "node:child_process";
 
+const GIT_MAX_BUFFER = 10 * 1024 * 1024;
+
 function runGit(projectRoot, args) {
   return execFileSync("git", ["-C", projectRoot, ...args], {
     encoding: "utf8",
+    maxBuffer: GIT_MAX_BUFFER,
     stdio: ["ignore", "pipe", "ignore"]
   }).trim();
 }
@@ -29,7 +32,7 @@ export function getRecentGitChanges(projectRoot, days = 5) {
     "log",
     `--since=${days} days ago`,
     "--date=short",
-    "--pretty=format:__COMMIT__%n%H%n%ad%n%s",
+    "--pretty=format:%x1e%H%x1f%ad%x1f%s%x1f",
     "--name-only"
   ]);
 
@@ -43,18 +46,17 @@ export function getRecentGitChanges(projectRoot, days = 5) {
   }
 
   const blocks = output
-    .split("__COMMIT__")
+    .split("\x1e")
     .map((block) => block.trim())
     .filter(Boolean);
 
   const hotspotCounter = new Map();
   const commits = blocks.map((block) => {
-    const lines = block
+    const [hash = "", date = "", summary = "", filesPart = ""] = block.split("\x1f");
+    const files = filesPart
       .split(/\r?\n/u)
       .map((line) => line.trim())
       .filter(Boolean);
-
-    const [hash, date, summary, ...files] = lines;
 
     for (const filePath of files) {
       hotspotCounter.set(filePath, (hotspotCounter.get(filePath) || 0) + 1);

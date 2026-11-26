@@ -5,6 +5,7 @@ import {
   MAP_JSON_FILE,
   MAP_MD_FILE,
   PROJECT_MD_FILE,
+  atomicWriteFileSync,
   firstNonEmptyLine,
   isPathInsideProject,
   isTextLikeFile,
@@ -373,18 +374,26 @@ function buildDependencies(projectRoot, techStack) {
   const packageJsonPath = path.join(projectRoot, "package.json");
 
   if (pathExists(packageJsonPath)) {
-    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
-    const names = dedupe([
-      ...Object.keys(packageJson.dependencies || {}),
-      ...Object.keys(packageJson.devDependencies || {})
-    ]).slice(0, 50);
+    let packageJson = null;
+    try {
+      packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
+    } catch {
+      packageJson = null;
+    }
 
-    dependencies.push(
-      ...names.map((name) => ({
-        ecosystem: "npm",
-        name
-      }))
-    );
+    if (packageJson && typeof packageJson === "object") {
+      const names = dedupe([
+        ...Object.keys(packageJson.dependencies || {}),
+        ...Object.keys(packageJson.devDependencies || {})
+      ]).slice(0, 50);
+
+      dependencies.push(
+        ...names.map((name) => ({
+          ecosystem: "npm",
+          name
+        }))
+      );
+    }
   }
 
   if (techStack.includes("springboot")) {
@@ -766,15 +775,16 @@ export function writeAndLog(projectRootInput, targetPath, content, changeSummary
     throw new Error("Refusing to write outside the project root.");
   }
 
+  const exactContent = String(content ?? "");
   fs.mkdirSync(path.dirname(absolutePath), { recursive: true });
-  writeText(absolutePath, String(content || "").replace(/\n$/u, ""));
+  atomicWriteFileSync(absolutePath, exactContent);
 
   const normalizedPath = relativeProjectPath(projectRoot, absolutePath);
   const logResult = appendChangeLog(projectRoot, `${normalizedPath}${changeSummary ? ` - ${changeSummary}` : ""}`);
 
   return {
     path: normalizedPath,
-    bytesWritten: Buffer.byteLength(String(content || ""), "utf8"),
+    bytesWritten: Buffer.byteLength(exactContent, "utf8"),
     log: logResult
   };
 }

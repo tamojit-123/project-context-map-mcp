@@ -70,7 +70,11 @@ export function writeMcpConfig(projectRoot, options = {}) {
   let current = {};
 
   if (fs.existsSync(targetPath)) {
-    current = JSON.parse(fs.readFileSync(targetPath, "utf8"));
+    try {
+      current = JSON.parse(fs.readFileSync(targetPath, "utf8"));
+    } catch (error) {
+      throw new Error(`Invalid JSON in ${targetPath}: ${error.message}`);
+    }
   }
 
   const config = {
