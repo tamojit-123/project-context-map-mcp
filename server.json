@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.tamojit-123/project-context-map-mcp",
+  "title": "Project Context Map",
+  "description": "Index repo import topology and git hotspots into project memory for low-token MCP coding.",
+  "repository": {
+    "url": "https://github.com/tamojit-123/project-context-map-mcp",
+    "source": "github"
+  },
+  "version": "0.1.11",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "project-context-map-mcp",
+      "version": "0.1.11",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

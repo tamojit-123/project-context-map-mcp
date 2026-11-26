@@ -1,6 +1,11 @@
 {
   "name": "project-context-map-mcp",
   "version": "0.1.10",
+  "mcpName": "io.github.tamojit-123/project-context-map-mcp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tamojit-123/project-context-map-mcp.git"
+  },
   "description": "MCP server and Claude Code skill for project-aware code changes with low token usage.\nmcprush.com-2ae221dd5221ac77c562f870",
   "type": "module",
   "main": "src/cli.js",
