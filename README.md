@@ -8,8 +8,8 @@ Turn a repository into structured project memory for MCP clients like Claude Cod
 
 [![Node 20+](https://img.shields.io/badge/node-%3E%3D20-1f6feb?style=for-the-badge)](#installation)
 [![MCP Server](https://img.shields.io/badge/mcp-server-0ea5e9?style=for-the-badge)](#mcp-tools)
-[![Project Memory](https://img.shields.io/badge/project-memory-16a34a?style=for-the-badge)](#what-it-generates)
-[![Topology Aware](https://img.shields.io/badge/topology-imports%20%26%20usage-f59e0b?style=for-the-badge)](#topology--visual-graph)
+[![CI Checks](https://img.shields.io/github/actions/workflow/status/tamojit-123/project-context-map-mcp/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/tamojit-123/project-context-map-mcp/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-16a34a?style=for-the-badge)](./LICENSE)
 
 [![Project Context Map MCP server](https://mcprush.com/badge/project-context-map-mcp/card.svg)](https://mcprush.com/to/project-context-map-mcp?ref=badge)
 
@@ -35,6 +35,13 @@ Instead of:
 you get:
 
 `index first -> query topology -> read sparse files -> edit with context`
+
+| Without Project Context Map | With Project Context Map |
+| --- | --- |
+| Agent scans directories & opens 15–30 unrelated files | Calls `get_project_summary` + `query_topology` first |
+| Re-discovers architecture every new session | Reads `.project.md` & `.project-map.json` immediately |
+| Misses downstream callers / import edges | Sees `dependencies` and `usedBy` before editing |
+| High prompt token usage on medium/large repos | Calls `read_files_sparse` on only 2–5 matched files |
 
 ---
 
@@ -69,6 +76,21 @@ This package gives you:
 ---
 
 ## Installation
+
+### Option 0: Zero-install with `npx` (Fastest)
+
+Add this directly to your MCP client config (Claude Code `.mcp.json`, Cursor, Claude Desktop, or VS Code) without installing anything globally:
+
+```json
+{
+  "mcpServers": {
+    "project-context-map": {
+      "command": "npx",
+      "args": ["-y", "project-context-map-mcp", "serve", "--project-root", "."]
+    }
+  }
+}
+```
 
 ### Option 1: Global install
 
