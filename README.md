@@ -13,6 +13,10 @@ Turn a repository into structured project memory for MCP clients like Claude Cod
 
 [![Project Context Map MCP server](https://mcprush.com/badge/project-context-map-mcp/card.svg)](https://mcprush.com/to/project-context-map-mcp?ref=badge)
 
+[![project-context-map-mcp MCP server – quality and maintenance score on Glama](https://glama.ai/mcp/servers/tamojit-123/project-context-map-mcp/badges/score.svg)](https://glama.ai/mcp/servers/tamojit-123/project-context-map-mcp)
+
+[![project-context-map-mcp MCP server – quality and maintenance score on Glama](https://glama.ai/mcp/servers/tamojit-123/project-context-map-mcp/badges/card.svg)](https://glama.ai/mcp/servers/tamojit-123/project-context-map-mcp)
+
 </div>
 
 ---
