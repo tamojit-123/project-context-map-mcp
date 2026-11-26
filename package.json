@@ -18,8 +18,11 @@
     "install-hooks": "node src/cli.js install-hooks",
     "configure-claude": "node src/cli.js configure-claude",
     "print-mcp-config": "node src/cli.js print-mcp-config",
+    "sync-server-json": "node scripts/sync-server-json.js",
+    "mcp:validate": "mcp-publisher validate",
+    "mcp:publish": "mcp-publisher publish",
     "build": "npm run lint",
-    "lint": "node --check src/cli.js && node --check src/claude.js && node --check src/git.js && node --check src/indexer.js && node --check src/ranker.js && node --check src/server.js && node --check src/utils.js && node --check scripts/install-git-hooks.js && node --check scripts/refresh-map.js && node --check test/claude.test.js && node --check test/helpers.js && node --check test/hooks.test.js && node --check test/indexer.test.js && node --check test/ranker.test.js && node --check test/server.test.js && node --check test/utils.test.js",
+    "lint": "node --check src/cli.js && node --check src/claude.js && node --check src/git.js && node --check src/indexer.js && node --check src/ranker.js && node --check src/server.js && node --check src/utils.js && node --check scripts/install-git-hooks.js && node --check scripts/refresh-map.js && node --check scripts/sync-server-json.js && node --check test/claude.test.js && node --check test/helpers.js && node --check test/hooks.test.js && node --check test/indexer.test.js && node --check test/ranker.test.js && node --check test/server.test.js && node --check test/utils.test.js",
     "check": "npm run lint && npm test",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
     "prepublishOnly": "npm run check"
