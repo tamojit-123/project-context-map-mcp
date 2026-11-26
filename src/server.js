@@ -30,12 +30,59 @@ function asTextResult(payload) {
   };
 }
 
+function asErrorResult(message) {
+  return {
+    isError: true,
+    content: [
+      {
+        type: "text",
+        text: JSON.stringify({ error: message }, null, 2)
+      }
+    ]
+  };
+}
+
+function requireNonEmptyString(value, fieldName) {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error(`Invalid "${fieldName}": expected a non-empty string.`);
+  }
+  return value;
+}
+
+function requireString(value, fieldName) {
+  if (typeof value !== "string") {
+    throw new Error(`Invalid "${fieldName}": expected a string.`);
+  }
+  return value;
+}
+
+function requireStringArray(value, fieldName) {
+  if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) {
+    throw new Error(`Invalid "${fieldName}": expected an array of strings.`);
+  }
+  return value;
+}
+
+function parsePositiveInt(value, fallback, fieldName, max = 1000) {
+  if (value === undefined || value === null) {
+    return fallback;
+  }
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw new Error(`Invalid "${fieldName}": expected a positive integer.`);
+  }
+  return Math.min(parsed, max);
+}
+
 function getRoot(args) {
+  if (args?.projectRoot !== undefined && typeof args.projectRoot !== "string") {
+    throw new Error('Invalid "projectRoot": expected a string.');
+  }
   return resolveProjectRoot(args?.projectRoot);
 }
 
 export function createServer() {
-  return new Server(
+  const instance = new Server(
     {
       name: "project-context-map",
       version: "0.1.0"
@@ -48,11 +95,13 @@ export function createServer() {
         "Use project map tools before reading many files. Prefer get_project_summary and find_relevant_files first, then inspect only the returned files."
     }
   );
+
+  registerHandlers(instance);
+  return instance;
 }
 
-const server = createServer();
-
-server.setRequestHandler(ListToolsRequestSchema, async () => {
+function registerHandlers(targetServer) {
+  targetServer.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
       {
@@ -251,107 +300,125 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   };
 });
 
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const { name, arguments: args = {} } = request.params;
+  targetServer.setRequestHandler(CallToolRequestSchema, async (request) => {
+    const { name, arguments: args = {} } = request.params;
 
-  if (name === "read_project_context") {
-    return asTextResult(readProjectContext(getRoot(args)));
-  }
+    try {
+      if (name === "read_project_context") {
+        return asTextResult(readProjectContext(getRoot(args)));
+      }
 
-  if (name === "query_topology") {
-    const projectMap = loadProjectMap(getRoot(args));
-    const result = findRelevantFiles(args.query, projectMap, Number(args.limit || 8));
-    const matchedPaths = result.matches.map((item) => item.path);
-    const topology = matchedPaths.map((filePath) => {
-      const file = projectMap.files.find((item) => item.path === filePath);
-      return {
-        path: filePath,
-        module: file?.module || "",
-        dependencies: file?.dependencies || [],
-        usedBy: file?.used_by || []
-      };
-    });
+      if (name === "query_topology") {
+        const query = requireNonEmptyString(args.query, "query");
+        const limit = parsePositiveInt(args.limit, 8, "limit", 100);
+        const projectMap = loadProjectMap(getRoot(args));
+        const result = findRelevantFiles(query, projectMap, limit);
+        const matchedPaths = result.matches.map((item) => item.path);
+        const topology = matchedPaths.map((filePath) => {
+          const file = projectMap.files.find((item) => item.path === filePath);
+          return {
+            path: filePath,
+            module: file?.module || "",
+            dependencies: file?.dependencies || [],
+            usedBy: file?.used_by || []
+          };
+        });
 
-    return asTextResult({
-      query: args.query,
-      matchedPaths,
-      confidence: result.confidence,
-      matches: result.matches,
-      topology
-    });
-  }
+        return asTextResult({
+          query,
+          matchedPaths,
+          confidence: result.confidence,
+          matches: result.matches,
+          topology
+        });
+      }
 
-  if (name === "read_files_sparse") {
-    return asTextResult(readFilesSparse(getRoot(args), args.paths || []));
-  }
+      if (name === "read_files_sparse") {
+        const paths = requireStringArray(args.paths ?? [], "paths");
+        return asTextResult(readFilesSparse(getRoot(args), paths));
+      }
 
-  if (name === "write_and_log") {
-    return asTextResult(writeAndLog(getRoot(args), args.path, args.content, args.summary || ""));
-  }
+      if (name === "write_and_log") {
+        const targetPath = requireNonEmptyString(args.path, "path");
+        const content = requireString(args.content, "content");
+        const summary = args.summary === undefined ? "" : requireString(args.summary, "summary");
+        return asTextResult(writeAndLog(getRoot(args), targetPath, content, summary));
+      }
 
-  if (name === "get_project_summary") {
-    const projectMap = loadProjectMap(getRoot(args));
-    return asTextResult({
-      projectRoot: projectMap.projectRoot,
-      generatedAt: projectMap.generatedAt,
-      projectSummary: projectMap.project_summary,
-      techStack: projectMap.tech_stack,
-      stats: projectMap.stats,
-      entrypoints: projectMap.entrypoints,
-      topModules: projectMap.modules.slice(0, 12),
-      hotspots: (projectMap.hotspots || []).slice(0, 10)
-    });
-  }
+      if (name === "get_project_summary") {
+        const projectMap = loadProjectMap(getRoot(args));
+        return asTextResult({
+          projectRoot: projectMap.projectRoot,
+          generatedAt: projectMap.generatedAt,
+          projectSummary: projectMap.project_summary,
+          techStack: projectMap.tech_stack,
+          stats: projectMap.stats,
+          entrypoints: projectMap.entrypoints,
+          topModules: projectMap.modules.slice(0, 12),
+          hotspots: (projectMap.hotspots || []).slice(0, 10)
+        });
+      }
 
-  if (name === "refresh_project_map") {
-    const result = refreshProjectMap(getRoot(args));
-    return asTextResult({
-      message: "Project map refreshed.",
-      jsonPath: result.jsonPath,
-      markdownPath: result.markdownPath,
-      projectMarkdownPath: result.projectMarkdownPath,
-      generatedAt: result.projectMap.generatedAt,
-      totalFiles: result.projectMap.stats.totalFiles
-    });
-  }
+      if (name === "refresh_project_map") {
+        const result = refreshProjectMap(getRoot(args));
+        return asTextResult({
+          message: "Project map refreshed.",
+          jsonPath: result.jsonPath,
+          markdownPath: result.markdownPath,
+          projectMarkdownPath: result.projectMarkdownPath,
+          generatedAt: result.projectMap.generatedAt,
+          totalFiles: result.projectMap.stats.totalFiles
+        });
+      }
 
-  if (name === "get_module_context") {
-    const result = getModuleContext(getRoot(args), args.module);
+      if (name === "get_module_context") {
+        const moduleName = requireNonEmptyString(args.module, "module");
+        const result = getModuleContext(getRoot(args), moduleName);
 
-    if (!result) {
-      return asTextResult({
-        error: `Module not found in project map: ${args.module}`
-      });
+        if (!result) {
+          return asTextResult({
+            error: `Module not found in project map: ${moduleName}`
+          });
+        }
+
+        return asTextResult(result);
+      }
+
+      if (name === "find_relevant_files") {
+        const task = requireNonEmptyString(args.task, "task");
+        const limit = parsePositiveInt(args.limit, 8, "limit", 100);
+        const projectMap = loadProjectMap(getRoot(args));
+        const result = findRelevantFiles(task, projectMap, limit);
+        return asTextResult(result);
+      }
+
+      if (name === "get_recent_git_changes") {
+        const days = parsePositiveInt(args.days, 5, "days", 3650);
+        const result = getRecentGitChanges(getRoot(args), days);
+        return asTextResult(result);
+      }
+
+      if (name === "explain_file_role") {
+        const targetPath = requireNonEmptyString(args.path, "path");
+        const result = explainFile(getRoot(args), targetPath);
+
+        if (!result) {
+          return asTextResult({
+            error: `File not found in project map: ${targetPath}`
+          });
+        }
+
+        return asTextResult(result);
+      }
+
+      return asErrorResult(`Unknown tool: ${name}`);
+    } catch (error) {
+      return asErrorResult(error?.message || String(error));
     }
+  });
+}
 
-    return asTextResult(result);
-  }
-
-  if (name === "find_relevant_files") {
-    const projectMap = loadProjectMap(getRoot(args));
-    const result = findRelevantFiles(args.task, projectMap, Number(args.limit || 8));
-    return asTextResult(result);
-  }
-
-  if (name === "get_recent_git_changes") {
-    const result = getRecentGitChanges(getRoot(args), Number(args.days || 5));
-    return asTextResult(result);
-  }
-
-  if (name === "explain_file_role") {
-    const result = explainFile(getRoot(args), args.path);
-
-    if (!result) {
-      return asTextResult({
-        error: `File not found in project map: ${args.path}`
-      });
-    }
-
-    return asTextResult(result);
-  }
-
-  throw new Error(`Unknown tool: ${name}`);
-});
+const server = createServer();
 
 export async function startServer() {
   const transport = new StdioServerTransport();

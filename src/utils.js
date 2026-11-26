@@ -87,9 +87,60 @@ export function relativeProjectPath(projectRoot, targetPath) {
   return toPosixPath(path.relative(projectRoot, targetPath));
 }
 
+function resolveNearestRealPath(targetPath) {
+  let current = path.resolve(targetPath);
+  const missing = [];
+
+  while (true) {
+    try {
+      const stat = fs.lstatSync(current);
+      if (stat.isSymbolicLink()) {
+        try {
+          const real = fs.realpathSync(current);
+          return path.join(real, ...missing.reverse());
+        } catch {
+          const linkTarget = fs.readlinkSync(current);
+          const resolvedTarget = path.resolve(path.dirname(current), linkTarget);
+          return resolveNearestRealPath(path.join(resolvedTarget, ...missing.reverse()));
+        }
+      }
+
+      const real = fs.realpathSync(current);
+      return path.join(real, ...missing.reverse());
+    } catch (error) {
+      if (error?.code !== "ENOENT") {
+        throw error;
+      }
+
+      const parent = path.dirname(current);
+      if (parent === current) {
+        return path.resolve(targetPath);
+      }
+
+      missing.push(path.basename(current));
+      current = parent;
+    }
+  }
+}
+
 export function isPathInsideProject(projectRoot, targetPath) {
-  const relativePath = path.relative(projectRoot, targetPath);
-  return relativePath === "" || (!relativePath.startsWith("..") && !path.isAbsolute(relativePath));
+  const resolvedRoot = path.resolve(projectRoot);
+  const resolvedTarget = path.resolve(targetPath);
+  const relativePath = path.relative(resolvedRoot, resolvedTarget);
+
+  if (relativePath !== "" && (relativePath.startsWith("..") || path.isAbsolute(relativePath))) {
+    return false;
+  }
+
+  if (!fs.existsSync(resolvedRoot)) {
+    return true;
+  }
+
+  const realRoot = fs.realpathSync(resolvedRoot);
+  const realTarget = resolveNearestRealPath(resolvedTarget);
+  const realRelative = path.relative(realRoot, realTarget);
+
+  return realRelative === "" || (!realRelative.startsWith("..") && !path.isAbsolute(realRelative));
 }
 
 export function shouldIgnoreDirectory(dirname) {

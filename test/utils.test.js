@@ -70,6 +70,21 @@ describe("utils", () => {
     expect(isPathInsideProject(root, outsidePath)).toBe(false);
   });
 
+  test("isPathInsideProject rejects symlinks and dangling symlinks pointing outside root", () => {
+    const root = createTempProject();
+    const outsideDir = createTempProject("pcm-outside-");
+    tempProjects.push(root, outsideDir);
+
+    fs.symlinkSync(outsideDir, path.join(root, "escape-dir"));
+    fs.symlinkSync(path.join(outsideDir, "nonexistent.txt"), path.join(root, "dangling-escape.txt"));
+    fs.mkdirSync(path.join(root, "safe-dir"));
+    fs.symlinkSync(path.join(root, "safe-dir"), path.join(root, "internal-link"));
+
+    expect(isPathInsideProject(root, path.join(root, "escape-dir", "secret.txt"))).toBe(false);
+    expect(isPathInsideProject(root, path.join(root, "dangling-escape.txt"))).toBe(false);
+    expect(isPathInsideProject(root, path.join(root, "internal-link", "ok.txt"))).toBe(true);
+  });
+
   test("tokenize lowercases text, splits on punctuation, and removes short tokens", () => {
     expect(tokenize("Fix API auth in src/index.js, now!")).toEqual(["fix", "api", "auth", "src", "index", "now"]);
   });

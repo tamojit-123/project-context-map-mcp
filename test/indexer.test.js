@@ -152,4 +152,15 @@ describe("indexer", () => {
 
     expect(() => writeAndLog(root, "../escape.txt", "nope")).toThrow("Refusing to write outside the project root.");
   });
+
+  test("writeAndLog refuses writes through symlinks pointing outside the project root", () => {
+    const root = createSampleProject();
+    const outsideDir = createTempProject("pcm-outside-");
+    tempProjects.push(outsideDir);
+
+    fs.symlinkSync(outsideDir, path.join(root, "linked-out"));
+
+    expect(() => writeAndLog(root, "linked-out/escape.txt", "nope")).toThrow("Refusing to write outside the project root.");
+    expect(fs.existsSync(path.join(outsideDir, "escape.txt"))).toBe(false);
+  });
 });
