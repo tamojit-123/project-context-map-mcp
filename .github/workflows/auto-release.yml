@@ -12,51 +12,50 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  check-version:
+  release:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
     outputs:
-      should_release: ${{ steps.check.outputs.should_release }}
-      tag: ${{ steps.check.outputs.tag }}
+      sha: ${{ steps.bump.outputs.sha }}
+      tag: ${{ steps.bump.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ github.token }}
 
-      - name: Check if package.json version is untagged
-        id: check
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          TAG="v${VERSION}"
-          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
-            echo "Tag ${TAG} already exists; skipping release."
-            echo "should_release=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "Tag ${TAG} does not exist; will create release."
-            echo "should_release=true" >> "$GITHUB_OUTPUT"
-          fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-  create-release:
-    needs: check-version
-    if: needs.check-version.outputs.should_release == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Create GitHub Release
+      - name: Bump patch version, commit, and create GitHub Release
+        id: bump
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ needs.check-version.outputs.tag }}
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          npm version patch --no-git-tag-version
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="v${VERSION}"
+
+          git add package.json package-lock.json
+          git commit -m "chore(release): ${TAG} [skip ci]"
+          git push origin HEAD:main
+
+          SHA=$(git rev-parse HEAD)
+          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
           gh release create "${TAG}" \
-            --target "${GITHUB_SHA}" \
+            --target "${SHA}" \
             --title "${TAG}" \
             --generate-notes
 
   publish:
-    needs:
-      - check-version
-      - create-release
-    if: needs.check-version.outputs.should_release == 'true'
+    needs: release
     uses: ./.github/workflows/npm-publish.yml
+    with:
+      ref: ${{ needs.release.outputs.sha }}
     secrets: inherit
