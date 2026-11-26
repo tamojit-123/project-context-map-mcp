@@ -60,15 +60,39 @@ export function readJsonIfExists(filePath) {
     return null;
   }
 
-  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  try {
+    return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+export function atomicWriteFileSync(filePath, content) {
+  const dir = path.dirname(filePath);
+  const base = path.basename(filePath);
+  const tempPath = path.join(dir, `.${base}.${process.pid}.${Date.now()}.tmp`);
+
+  try {
+    fs.writeFileSync(tempPath, content, "utf8");
+    fs.renameSync(tempPath, filePath);
+  } catch (error) {
+    try {
+      if (fs.existsSync(tempPath)) {
+        fs.unlinkSync(tempPath);
+      }
+    } catch {
+      // Ignore temp cleanup failure
+    }
+    throw error;
+  }
 }
 
 export function writeJson(filePath, value) {
-  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+  atomicWriteFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`);
 }
 
 export function writeText(filePath, value) {
-  fs.writeFileSync(filePath, `${value}\n`, "utf8");
+  atomicWriteFileSync(filePath, `${value}\n`);
 }
 
 export function readTextIfExists(filePath) {

@@ -4,6 +4,7 @@ import { afterEach, describe, expect, test } from "@jest/globals";
 import {
   firstNonEmptyLine,
   isPathInsideProject,
+  readJsonIfExists,
   relativeProjectPath,
   tokenize,
   walkProjectFiles,
@@ -87,5 +88,13 @@ describe("utils", () => {
 
   test("tokenize lowercases text, splits on punctuation, and removes short tokens", () => {
     expect(tokenize("Fix API auth in src/index.js, now!")).toEqual(["fix", "api", "auth", "src", "index", "now"]);
+  });
+
+  test("readJsonIfExists returns null for malformed JSON without throwing", () => {
+    const root = createTempProject();
+    tempProjects.push(root);
+    const badFile = writeFile(root, "broken.json", "{ not: valid json");
+
+    expect(readJsonIfExists(badFile)).toBeNull();
   });
 });

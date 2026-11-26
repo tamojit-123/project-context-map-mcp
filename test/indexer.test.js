@@ -142,9 +142,30 @@ describe("indexer", () => {
       path: "notes/todo.md",
       bytesWritten: Buffer.byteLength("Remember the map", "utf8")
     });
-    expect(fs.readFileSync(path.join(root, "notes/todo.md"), "utf8")).toBe("Remember the map\n");
+    expect(fs.readFileSync(path.join(root, "notes/todo.md"), "utf8")).toBe("Remember the map");
     expect(projectContext).toContain("manual update");
     expect(projectContext).toContain("notes/todo.md - add todo");
+  });
+
+  test("writeAndLog preserves empty content and exact bytesWritten", () => {
+    const root = createSampleProject();
+    refreshProjectMap(root);
+
+    const writeResult = writeAndLog(root, "notes/empty.txt", "", "empty file");
+
+    expect(writeResult.bytesWritten).toBe(0);
+    expect(fs.readFileSync(path.join(root, "notes/empty.txt"), "utf8")).toBe("");
+  });
+
+  test("loadProjectMap regenerates corrupted .project-map.json and tolerates invalid package.json", () => {
+    const root = createSampleProject();
+    refreshProjectMap(root);
+
+    fs.writeFileSync(path.join(root, ".project-map.json"), "{ invalid json", "utf8");
+    fs.writeFileSync(path.join(root, "package.json"), "{ broken", "utf8");
+
+    const explained = explainFile(root, "src/helper.js");
+    expect(explained).toMatchObject({ path: "src/helper.js", module: "src" });
   });
 
   test("writeAndLog refuses writes outside the project root", () => {
