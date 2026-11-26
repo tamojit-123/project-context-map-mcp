@@ -21,6 +21,12 @@ Turn a repository into structured project memory for MCP clients like Claude Cod
 
 ---
 
+## Demo
+
+![Project Context Map MCP Demo](./assets/demo.gif)
+
+---
+
 ## Why This Exists
 
 AI coding tools often begin the same way in a medium or large repo:
